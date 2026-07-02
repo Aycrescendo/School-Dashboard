@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+// ==================== ENUMS ====================
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum Term {
+  FIRST
+  SECOND
+  THIRD
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacher   Teacher?
+  student   Student?
+  parent    Parent?
+  admin     Admin?
+}
+
+model Admin {
+  id     String @id @default(cuid())
+  name   String
+  phone  String?
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Teacher {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String?
+  gender     Gender
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classes    Class[]
+  subjects   Subject[]
+  attendance Attendance[]
+  announcements Announcement[]
+  results    Result[]
+}
+
+model Parent {
+  id       String    @id @default(cuid())
+  name     String
+  phone    String?
+  userId   String    @unique
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students Student[]
+  messages Message[]
+}
+
+model Student {
+  id           String       @id @default(cuid())
+  name         String
+  phone        String?
+  gender       Gender
+  dateOfBirth  DateTime?
+  admissionNo  String       @unique
+  userId       String       @unique
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classId      String?
+  class        Class?       @relation(fields: [classId], references: [id])
+  parentId     String?
+  parent       Parent?      @relation(fields: [parentId], references: [id])
+  attendance   Attendance[]
+  results      Result[]
+  transcripts  Transcript[]
+}
+
+model Class {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  teacherId String?
+  teacher   Teacher?  @relation(fields: [teacherId], references: [id])
+  students  Student[]
+  subjects  Subject[]
+  attendance Attendance[]
+  announcements Announcement[]
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  name      String
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id])
+  teacherId String?
+  teacher   Teacher? @relation(fields: [teacherId], references: [id])
+  results   Result[]
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  date      DateTime         @default(now())
+  status    AttendanceStatus
+  studentId String
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class            @relation(fields: [classId], references: [id])
+  teacherId String
+  teacher   Teacher          @relation(fields: [teacherId], references: [id])
+}
+
+model Result {
+  id        String   @id @default(cuid())
+  caScore   Float?
+  examScore Float?
+  score     Float
+  grade     String?
+  comment   String?
+  term      Term
+  year      String
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Transcript {
+  id        String   @id @default(cuid())
+  term      Term
+  year      String
+  gpa       Float?
+  remarks   String?
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  teacherId String?
+  teacher   Teacher? @relation(fields: [teacherId], references: [id])
+  classId   String?
+  class     Class?   @relation(fields: [classId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  subject   String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  parentId  String
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+}
